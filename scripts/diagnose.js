@@ -1,30 +1,23 @@
 /*
- * Quantumult X diagnostic (NO response modification).
- * Temporarily point the existing script-response-body rewrite to this file.
- * It reports whether the rewrite was triggered and whether the two expected
- * strings were present in the HTTP response body.
- *
- * Do not publish response bodies, cookies or full request URLs when debugging.
+ * GoogleOneQX read-only hit test.
+ * Temporarily select this script in your Quantumult X rewrite rule.
+ * It never modifies the response body or purchase parameters.
  */
 (function () {
   try {
-    const url = typeof $request !== "undefined" && $request.url ? String($request.url) : "(unknown URL)";
-    const path = url.split("?")[0];
-    const body = typeof $response !== "undefined" && typeof $response.body === "string"
+    const url = typeof $request === "object" && $request.url
+      ? String($request.url).split("?")[0] : "(unknown)";
+    const body = typeof $response === "object" && typeof $response.body === "string"
       ? $response.body : "";
-
-    const count = (text, needle) => text ? text.split(needle).length - 1 : 0;
-    const first = count(body, "30tb.ai.pro.m");
-    const second = count(body, "20tb.m.v2");
-
-    const message = "Triggered: " + path + " | body=" + body.length
-      + " chars | SKU1=" + first + ", SKU2=" + second;
-    console.log("[GoogleOneQX] " + message);
+    const matches = (body.match(/g1\.ios\.30tb\.ai\.pro\.m/g) || []).length;
+    const msg = "Triggered: " + url + " | body=" + body.length
+      + " chars | source SKU matches=" + matches;
+    console.log("[GoogleOneQX] " + msg);
     if (typeof $notify === "function") {
-      $notify("GoogleOneQX diagnostic", "Response rewrite triggered", message);
+      $notify("GoogleOneQX diagnostic", "Response triggered", msg);
     }
-  } catch (e) {
-    console.log("[GoogleOneQX] Diagnostic error: " + String(e));
+  } catch (error) {
+    console.log("[GoogleOneQX] Diagnostic error: " + String(error));
   }
   $done({});
 })();
