@@ -1,57 +1,42 @@
 # Google One Quantumult X Rewrite
 
-将截图中的 Shadowrocket「HTTPS 解密 + 正文重写」配置转换为 Quantumult X 响应脚本。
+将 Google One 的指定页面响应中的套餐 SKU 字符串改写为另一字符串的 Quantumult X 脚本。
 
-## 原截图规则
+## 当前规则（2026-11-22 更新）
 
-目标 URL：`^https://one.google.com/ai\?.*$`
+**URL 匹配表达式：**
 
-- `30tb\.ai\.pro\.m` → `30tb.m`
-- `20tb\.m\.v2` → `20tb.m`
+`^https://one\.google\.com/ai\?.*$`
 
-> 截图分辨率有限，这两条匹配文字是根据截图放大后识别的，请和原始文本核对。它们针对的是方案标识符，并非日期。
+**响应体中的 SKU 替换：**
 
-## 使用方式
+- 匹配正则：`g1\.ios\.30tb\.ai\.pro\.m`
+- 替换值：`g1.ai.ultra.3months_ip_90p.acq`
 
-1. 复制 [google-one.conf](google-one.conf) 中的 `[rewrite_local]` 和 `[mitm]` 配置到 Quantumult X 配置文件对应的节。若已存在相应节，请只合并规则行，不要重复创建节。
-2. 在 Quantumult X 中启用 MITM/HTTPS 解密，安装并信任 Quantumult X 的证书。
-3. 确保 `one.google.com` 在 MITM 主机名列表内，并开启重写规则。
-4. 重新加载 [Google One AI 页面](https://one.google.com/ai) 并检查是否命中脚本。
+原来 `30tb.ai.pro.m` → `30tb.m` 以及 `20tb.m.v2` → `20tb.m` 的两条规则已经移除，避免干扰完整 SKU 的替换。
 
-**脚本 Raw 地址：**
+## 安装
 
-```text
-https://raw.githubusercontent.com/sumuen/googleoneqx/main/scripts/google-one.js
-```
+1. 将 [google-one.conf](google-one.conf) 的规则行加入现有 Quantumult X 配置中对应的 `[rewrite_local]` 和 `[mitm]` 部分，勿重复创建区段。
+2. 在 Quantumult X 开启重写、MITM，并安装、信任 HTTPS 解密证书。
+3. 在浏览器加载带有查询参数的 `https://one.google.com/ai?...` 页面。
+4. 将日志等级设为 Debug 后，可以查找 `[GoogleOneQX] SKU replacements: N`，确认是否发生替换。
 
-**规则片段 Raw 地址：**
+脚本 Raw 地址：
 
-```text
-https://raw.githubusercontent.com/sumuen/googleoneqx/main/google-one.conf
-```
+`https://raw.githubusercontent.com/sumuen/googleoneqx/main/scripts/google-one.js`
 
-## 注意
+配置 Raw 地址：
 
-- 本脚本只改变所匹配 HTTP 响应体中的特定字符串，**不能**开通、延长、共享或解锁任何 Google One / Google AI Ultra / Colab 付费权益。
-- 只有页面请求匹配 `https://one.google.com/ai?... ` 且内容以文本响应方式经过 Quantumult X 时才会生效。Google 可能调整网站路径、页面结构或计划标识符。
-- HTTPS 解密会在本机代理中处理访问内容。请只信任自己配置的代理和证书，避免在不受信任的配置中启用宽泛的 MITM 域名。
-- 如果实际打开的 URL 没有查询参数，请参考规则中的可选参数匹配写法；当前配置已同时支持有无查询参数。
+`https://raw.githubusercontent.com/sumuen/googleoneqx/main/google-one.conf`
 
+## 诊断
 
-## 价格未变化：先检查重写是否命中
+如果没有日志或者页面效果未变化，可以临时将脚本路径换成只读的 [scripts/diagnose.js](scripts/diagnose.js)，检查该响应里是否包含来源 SKU。诊断脚本不会修改任何响应内容。
 
-诊断脚本：[scripts/diagnose.js](scripts/diagnose.js)（**只读，不修改响应内容**）。
+## 限制与安全说明
 
-1. 在 Quantumult X 当前 `script-response-body` 规则的「脚本路径」中，**临时**替换为：
-
-   `https://raw.githubusercontent.com/sumuen/googleoneqx/main/scripts/diagnose.js`
-
-2. 保持 MITM 开启、证书受信任、重写开启，并重新加载 Google One 网页（必要时无痕模式/清除缓存）。
-3. 在 Quantumult X 日志中查找 `[GoogleOneQX]`；如果允许通知，命中时还会显示通知。
-4. 结果解读：
-   - **无日志**：检查浏览器实际 URL 是否匹配当前规则、MITM 域名是否包含 `one.google.com`、证书和重写是否启用；脚本也可能加载失败。
-   - **Triggered, SKU1=0, SKU2=0**：已经执行，但这条 HTTP 响应不含截图中的套餐标识符。
-   - **Triggered，SKU1 或 SKU2 大于 0**：目标字串在该响应中存在，可进一步检查响应替换是否影响展示。但服务器端真实结算价格不会由浏览器脚本决定。
-5. 排查完成后，将脚本路径改回 `scripts/google-one.js`。
-
-**注意：** 当前匹配规则只匹配 `https://one.google.com/ai`（含可选查询参数）。Google 也使用 `https://one.google.com/about/google-ai-plans/` 套餐页面路径。路径不同就不会触发原规则。不要发布带账号信息的完整 URL、HTTP 响应体或 Cookie。
+- 这是客户端的 HTTP 响应文本替换，**不能**证明 Google 或 Apple 授予了对应优惠资格，也不能控制 App Store 的结算价格。
+- 请以 Apple 购买确认弹窗显示的价格与续费条款为准，若不是你预期的金额，请取消购买。
+- 规则只匹配 `/ai` 且带有 `?` 查询字符串的 URL；Google 可能改变路径或页面结构。
+- HTTPS 解密和响应改写只应在你信任的设备与配置中使用，不要公开响应正文、Cookie 或完整的账号参数。
