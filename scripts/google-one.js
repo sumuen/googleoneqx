@@ -1,34 +1,29 @@
 /*
- * Google One AI page -- Quantumult X response body rewrite
+ * Quantumult X: Google One AI page response-body rewrite.
  *
- * Converted from the two Shadowrocket "正文重写" rules in the provided screenshot:
- *   30tb\.ai\.pro\.m  -> 30tb.m
- *   20tb\.m\.v2       -> 20tb.m
+ * Source SKU regex:  g1\.ios\.30tb\.ai\.pro\.m
+ * Replacement value: g1.ai.ultra.3months_ip_90p.acq
  *
- * These are literal SKU/string replacements in page response text.
- * They do NOT grant any subscription, Colab credits or server-side rights.
+ * This only rewrites local response text; it cannot grant promotional
+ * eligibility or change the actual App Store billing price.
  */
-
 (function () {
   const body = $response.body;
-
   if (typeof body !== "string") {
     $done({});
     return;
   }
 
-  const rules = [
-    ["30tb.ai.pro.m", "30tb.m"],
-    ["20tb.m.v2", "20tb.m"]
-  ];
+  let matches = 0;
+  const rewritten = body.replace(/g1\.ios\.30tb\.ai\.pro\.m/g, () => {
+    matches += 1;
+    return "g1.ai.ultra.3months_ip_90p.acq";
+  });
 
-  let output = body;
-  for (const [from, to] of rules) {
-    output = output.split(from).join(to);
-  }
+  console.log("[GoogleOneQX] SKU replacements: " + matches);
 
-  if (output !== body) {
-    $done({ body: output });
+  if (matches > 0) {
+    $done({ body: rewritten });
   } else {
     $done({});
   }
